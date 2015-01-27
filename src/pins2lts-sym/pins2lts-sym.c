@@ -2968,9 +2968,11 @@ directed(sat_proc_t sat_proc, reach_proc_t reach_proc, vset_t visited,
 }
 
 static void
-init_model(char *file)
+init_model(char **files, int file_count)
 {
-    Warning(info, "opening %s", file);
+    for (int i = 0; i < file_count; i++) {
+        Warning(info, "opening %s", files[i]);
+    }
     model = GBcreateBase();
     GBsetChunkMethods(model,HREgreyboxNewmap,HREglobal(),
                       HREgreyboxI2C,
@@ -2980,7 +2982,7 @@ init_model(char *file)
 
     HREbarrier(HREglobal());
 
-    GBloadFile(model, file);
+    GBloadFiles(model, files, file_count, &model);
     model = GBaddMutex(model);
     model = GBwrapModel(model);
 
@@ -3433,6 +3435,8 @@ parity_game* compute_symbolic_parity_game(vset_t visited, int* src)
     return g;
 }
 
+static char *files[10];
+int file_count;
 VOID_TASK_3(run_reachability, vset_t, states, char*, etf_output, rt_timer_t, timer)
 {
     sat_proc_t sat_proc = NULL;
@@ -3519,7 +3523,7 @@ VOID_TASK_1(actual_main, void*, arg)
                   "The optional output of this analysis is an ETF "
                       "representation of the input\n\nOptions");
     lts_lib_setup(); // add options for LTS library
-    HREinitStart(&argc,&argv,1,2,files,"<model> [<etf>]");
+    HREinitStart(&argc,&argv,1,21,files,&file_count,"<model> [<etf>]");
 
     /* initialize HRE on other workers */
     TOGETHER(init_hre, HREglobal());

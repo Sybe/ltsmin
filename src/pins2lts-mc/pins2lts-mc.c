@@ -63,6 +63,7 @@ static bool                timed_model = false;
 #endif
 
 static run_t              *run = NULL;
+static int                file_count;
 
 static void
 exit_ltsmin (int sig)
@@ -97,7 +98,7 @@ hre_init_and_spawn_workers (int argc, char *argv[])
     }
 
     // spawns threads:
-    HREinitStart (&argc, &argv, 1, 2, files, "<model> [lts]");
+    HREinitStart (&argc, &argv, 1, 2, files, &file_count, "<model> [lts]");
 
     // Only use shared allocation if available
     // HRE only initiates this for more than one process
@@ -117,8 +118,9 @@ create_pins_model ()
 
     Print1 (info, "Loading model from %s", files[0]);
 
-    GBloadFile (model, files[0]);
+    GBloadFiles (model, files, file_count, &model);
     model = GBwrapModel(model);
+
 
     return model;
 }

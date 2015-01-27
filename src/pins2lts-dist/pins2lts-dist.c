@@ -92,6 +92,7 @@ static char*            trc_output=NULL;
 static char*            cost=NULL;
 static int              inhibit=0;
 static int              representatives=1;
+static int              file_count;
 
 static  struct poptOption options[] = {
     { "filter" , 0 , POPT_ARG_STRING , &label_filter , 0 ,
@@ -578,7 +579,7 @@ int main(int argc, char*argv[]){
     if (!SPEC_MT_SAFE){
         HREenableThreads(0, false);
     }
-    HREinitStart(&argc,&argv,1,2,files,"<model> [<lts>]");
+    HREinitStart(&argc,&argv,1,2,files,&file_count,"<model> [<lts>]");
 
     struct dist_thread_context ctx;
     mpi_nodes=HREpeers(HREglobal());
@@ -599,9 +600,9 @@ int main(int argc, char*argv[]){
                       HREgreyboxCount);
 
     if (ctx.mpi_me == 0)
-        GBloadFileShared(model,files[0]);
+        GBloadFilesShared(model,files[0],file_count);
     HREbarrier(HREglobal());
-    GBloadFile(model,files[0]);
+    GBloadFiles(model,files,file_count,&model);
     model = GBwrapModel(model);
 
     HREbarrier(HREglobal());

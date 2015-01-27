@@ -480,7 +480,7 @@ void PBESloadGreyboxModel(model_t model, const char*name)
     GBsetStateLabelLong(model, PBESgetStateLabelLong);
 
     //std::clog << "-- end of PBESloadGreyboxModel." << std::endl;
-    atexit(PBESexit);
+//    atexit(PBESexit);
 }
 
 } // end of extern "C"
