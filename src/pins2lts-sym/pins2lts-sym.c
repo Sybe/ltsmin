@@ -2753,6 +2753,7 @@ output_types(FILE *tbl_file)
 
         int values = GBchunkCount(model,i);
 
+        Warning(info, "values: %d", values);
         for (int j = 0; j < values; j++) {
             chunk c    = GBchunkGet(model, i, j);
             size_t len = c.len * 2 + 6;
@@ -2811,9 +2812,13 @@ do_output(char *etf_output, vset_t visited)
     }
 
     output_init(tbl_file);
+    Warning(info, "init");
     output_trans(tbl_file);
+    Warning(info, "trans");
     output_lbls(tbl_file, visited);
+    Warning(info, "lbls");
     output_types(tbl_file);
+    Warning(info, "types");
 
     fclose(tbl_file);
     RTstopTimer(timer);
