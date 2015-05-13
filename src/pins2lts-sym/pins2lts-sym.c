@@ -569,6 +569,7 @@ struct guard_add_info
 
 static void eval_cb (vset_t set, void *context, int *src)
 {
+    Warning(info, "eval_cb");
     // evaluate the guard
     int result = GBgetStateLabelShort(model, ((struct guard_add_info*)context)->guard, src);
 
@@ -3449,7 +3450,7 @@ parity_game* compute_symbolic_parity_game(vset_t visited, int* src)
     return g;
 }
 
-static char *files[10];
+static char *files[21];
 
 VOID_TASK_3(run_reachability, vset_t, states, char*, etf_output, rt_timer_t, timer)
 {
