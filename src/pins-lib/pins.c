@@ -69,6 +69,8 @@ struct grey_box_model {
 	string_index_t static_info_index;
 	/** Array of static information matrices. */
 	struct static_info_matrix * static_info_matrices;
+
+	int model_nr
 };
 
 struct static_info_matrix{
@@ -96,6 +98,13 @@ int GBsetMatrix(
     return res;
 }
 
+void GBsetModelNr(model_t model,int nr){
+    model->model_nr = nr;
+}
+
+int GBgetModelNr(model_t model){
+    return model->model_nr;
+}
 
 int GBgetMatrixID(model_t model,char*name){
     return SIlookup(model->static_info_index,name);
@@ -433,6 +442,7 @@ model_t GBcreateBase(){
 	
 	model->static_info_index=SIcreate();
 	model->static_info_matrices=NULL;
+	model->model_nr=0;
 	ADD_ARRAY(SImanager(model->static_info_index),model->static_info_matrices,struct static_info_matrix);
 	return model;
 }
