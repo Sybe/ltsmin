@@ -22,6 +22,7 @@
 #include <pins-lib/pins.h>
 #include <pins-lib/pins-impl.h>
 #include <pins-lib/property-semantics.h>
+//#include <pins-lib/pins2pins-parallel.c>
 #include <ltsmin-lib/ltsmin-standard.h>
 #include <ltsmin-lib/ltsmin-syntax.h>
 #include <ltsmin-lib/ltsmin-tl.h>
@@ -78,6 +79,8 @@ static int max_priority = INT_MIN;
 static vset_t true_states;
 static vset_t false_states;
 
+int file_count;// nr of files(only for composition)
+
 /*
   The inhibit and class matrices are used for maximal progress.
  */
@@ -132,6 +135,8 @@ static si_map_entry GUIDED[] = {
     {"directed", DIRECTED},
     {NULL, 0}
 };
+
+
 
 static void
 reach_popt(poptContext con, enum poptCallbackReason reason,
@@ -264,6 +269,7 @@ typedef void (*guided_proc_t)(sat_proc_t sat_proc, reach_proc_t reach_proc,
 typedef int (*transitions_t)(model_t model,int group,int*src,TransitionCB cb,void*context);
 
 static transitions_t transitions_short = NULL; // which function to call for the next states.
+
 
 /*
  * Add parallel operations
@@ -1522,7 +1528,6 @@ reach_bfs_prev(vset_t visited, vset_t visited_old, bitvector_t *reach_groups,
             // class_enabled holds all states in the current level with transitions in class c
             // only use current_level, so clear class_enabled...
             for (int c=0; c<inhibit_class_count; c++) vset_clear(class_enabled[c]);
-
             // for every class, compute successors, add to next_level
             for (int c=0; c<inhibit_class_count; c++) {
                 // set container to current level minus enabled transitions from all inhibiting classes
@@ -2770,6 +2775,7 @@ output_types(FILE *tbl_file)
 static void
 do_output(char *etf_output, vset_t visited)
 {
+
     FILE      *tbl_file;
     rt_timer_t  timer    = RTcreateTimer();
 
@@ -2812,14 +2818,12 @@ do_output(char *etf_output, vset_t visited)
     }
 
     output_init(tbl_file);
-    Warning(info, "init");
+    if(file_count > 2){
+        set_chunks(model);
+    }
     output_trans(tbl_file);
-    Warning(info, "trans");
     output_lbls(tbl_file, visited);
-    Warning(info, "lbls");
     output_types(tbl_file);
-    Warning(info, "types");
-
     fclose(tbl_file);
     RTstopTimer(timer);
     RTprintTimer(info, timer, "writing output took");
@@ -3441,7 +3445,7 @@ parity_game* compute_symbolic_parity_game(vset_t visited, int* src)
 }
 
 static char *files[10];
-int file_count;
+
 VOID_TASK_3(run_reachability, vset_t, states, char*, etf_output, rt_timer_t, timer)
 {
     sat_proc_t sat_proc = NULL;
@@ -3702,8 +3706,8 @@ VOID_TASK_1(actual_main, void*, arg)
     }
 
     /* save LTS */
-    if (files[1] != NULL) {
-        do_output(files[1], visited);
+    if (file_count > 1 && (0 != strcmp(strrchr(files[0], '.'), strrchr(files[file_count - 1], '.')))){
+        do_output(files[file_count - 1], visited);
     }
 
     /* optionally print counts of all group_next and group_explored sets */

@@ -245,7 +245,7 @@ extern pins_ltl_type_t PINS_LTL;
  *
  * NOTE: Default wrappers are now applied by GBwrapModel.
  */
-void GBloadFile(model_t model, const char *filename);
+void GBloadFiles(model_t model, const char **filename, int files, model_t *wrapped);
 
 /**
 \brief Factory method for loading models concurrently.
@@ -256,7 +256,7 @@ the read-only variables of model.
 
 \see GBregisterPreLoader
 */
-extern void GBloadFileShared(model_t model,const char *filename);
+extern void GBloadFilesShared(model_t model,const char **filename, int files);
 
 /**
  * \brief Method to wrap models according to the command line specification of users
