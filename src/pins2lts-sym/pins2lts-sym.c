@@ -3511,8 +3511,6 @@ VOID_TASK_3(run_reachability, vset_t, states, char*, etf_output, rt_timer_t, tim
     RTstopTimer(timer);
 }
 
-static char *files[2];
-
 struct args_t
 {
     int argc;
@@ -3552,7 +3550,7 @@ VOID_TASK_1(actual_main, void*, arg)
     lace_suspend();
 
     /* initialize the model and PINS wrappers */
-    init_model(files[0]);
+    init_model(files, file_count);
 
     /* initialize action detection */
     act_label = lts_type_find_edge_label_prefix (ltstype, LTSMIN_EDGE_TYPE_ACTION_PREFIX);
@@ -3712,7 +3710,7 @@ VOID_TASK_1(actual_main, void*, arg)
     }
 
     /* save LTS */
-    if (file_count > 1 && (0 != strcmp(strrchr(files[0], '.'), strrchr(files[file_count - 1], '.')))){
+    if (file_count ==2 || (file_count > 4 && (0 != strcmp(strrchr(files[0], '.'), strrchr(files[file_count - 1], '.'))) && file_count % 2 == 1)){
         do_output(files[file_count - 1], visited);
     }
 

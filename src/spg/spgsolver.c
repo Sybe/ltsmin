@@ -45,7 +45,7 @@ main (int argc, char *argv[])
     char *files[2];
     HREinitBegin(argv[0]);
     HREaddOptions(options,"Symbolic parity game solver. Solves <game>, plays according to <strategy>.\n");
-    HREinitStart(&argc,&argv,1,2,files,&fiel_count,"<game> [<strategy]");
+    HREinitStart(&argc,&argv,1,2,files,&file_count,"<game> [<strategy]");
 
 #ifdef HAVE_SYLVAN
     if (vset_default_domain==VSET_Sylvan || vset_default_domain==VSET_LDDmc) {

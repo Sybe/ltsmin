@@ -22,6 +22,8 @@ static enum {
     SCC_GROUP = 2
 } action = SCC_COLOR;
 
+static int file_count;
+
 static struct poptOption options[] = {
     {"color", 0, POPT_ARG_VAL, &action, SCC_COLOR,
      "cycle elimination using coloring (default)", NULL},
@@ -61,7 +63,7 @@ main (int argc, char **argv)
     HREaddOptions(options,"Perform a distributed cycle elimination on the input.\n\nOptions");
     lts_lib_setup();
     HREselectMPI();
-    HREinitStart(&argc,&argv,1,2,files,"<input> [<output>]");
+    HREinitStart(&argc,&argv,1,2,files,&file_count,"<input> [<output>]");
 
 
     MPI_Comm_size (MPI_COMM_WORLD, &nodes);

@@ -1212,9 +1212,6 @@ void
 GBloadFiles (model_t model, const char **filenames, int files, model_t *wrapped)
 {
     char               *extension = strrchr (filenames[0], '.');
-    if(0 != strcmp(extension, strrchr(filenames[files - 1], '.'))){
-        files--;
-    }
     if (extension) {
         extension++;
         for (int i = 0; i < registered; i++) {

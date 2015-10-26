@@ -1127,7 +1127,6 @@ put_mapa_lts_types(lts_type_t ltstype){
 void
 GBparallelCompose (model_t composition, const char **files, int file_count, pins_loader_t loader)
 {
-    Warning(info, "GBparallelCompose");
     GBsetNextStateLong(composition, getTransitionsLong);
     GBsetNextStateAll(composition, getTransitionsAll);
     GBsetStateLabelLong(composition, getStateLabelLong);
@@ -1295,9 +1294,6 @@ GBparallelCompose (model_t composition, const char **files, int file_count, pins
             }
         }
         GBsetMatrix(composition,LTSMIN_EDGE_TYPE_ACTION_CLASS,&p_dm_class,PINS_STRICT,PINS_INDEX_OTHER,PINS_INDEX_GROUP);
-        FILE *classfile = fopen("class.txt", "w+");
-        dm_print(classfile, &p_dm_class);
-        fclose(classfile);
     }
 
     //Inhibit matrix

@@ -778,7 +778,7 @@ int main(int argc, char*argv[]){
     }
     /***************************************************/
     HREbarrier(HREglobal());
-    if (file_count > 1 && (0 != strcmp(strrchr(files[0], '.'), strrchr(files[file_count - 1], '.')))) {
+    if (file_count == 2 || (file_count > 4 && (0 != strcmp(strrchr(files[0], '.'), strrchr(files[file_count - 1], '.'))) && file_count % 2 == 1)) {
         Warning(info,"Writing output to %s",files[file_count - 1]);
         write_lts=1;
         // get default filter.

@@ -208,7 +208,7 @@ typedef struct prcrl_context {
 
 static int PRCRLdelegateTransitionsLong(model_t model,int group,int*src,TransitionCB cb,void*context){
     prcrl_context_t ctx=GBgetContext(model);
-    model_nr = GBgetModelNr(model)
+    model_nr = GBgetModelNr(model);
     return GBgetTransitionsLong(ctx->cached,group,src,cb,context);
 }
 
@@ -447,11 +447,6 @@ void common_load_model(model_t model,const char*name,int mapa){
 
     GBsetMatrix(model,LTSMIN_EDGE_TYPE_ACTION_CLASS,&context->class_matrix,PINS_STRICT,PINS_INDEX_OTHER,PINS_INDEX_GROUP);
 
-    FILE *classfile = fopen("class.txt", "w+");
-    dm_print(classfile, &context->class_matrix);
-    fclose(classfile);
-
-
     static matrix_t progress_matrixs[10];
     if(!iomapa){
         if (max_progress != MAX_PROGRESS_NONE){
@@ -474,10 +469,6 @@ void common_load_model(model_t model,const char*name,int mapa){
             Warning(info,"inhibit matrix registered as %d",id);
         }
     }
-    
-    FILE *progress = fopen("progress.txt", "w+");
-    dm_print(progress, &progress_matrixs[model_count]);
-    fclose(progress);
 
 	//NOTE in older ghc: int == int64 and NOT int.
 	
