@@ -878,6 +878,19 @@ extern void GBsetPrettyPrint(model_t model,chunk2pretty_t chunk2pretty);
 /** Retrieve the map used for a specific type. */
 extern void* GBgetChunkMap(model_t model,int type_no);
 
+typedef void (*chunkCall_t)(model_t model, int pos, char* val);
+
+/**
+Only used in parallel composition. Set's chunks from a certain model
+into the composed model. The model parameter is the submodel, not the composition.
+ */
+extern void GBChunkCall(model_t model, int pos, char* val);
+
+/**
+Sets the GBChunkCall function for a certain model.
+ */
+extern void GBsetChunkCall(model_t model, chunkCall_t chunkCall);
+
 //@}
 
 /**

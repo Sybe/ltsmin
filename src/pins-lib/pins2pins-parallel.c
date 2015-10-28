@@ -16,6 +16,8 @@
 static model_t *models;     //Array of models to be composed
 static int model_count;     //Number of models to be composed
 static int bool_type;       //Boolean type
+static model_t composition_model;
+static int *initialized;
 
 static int iomapa = 0;
 static int input_enabled = 0;
@@ -56,11 +58,20 @@ typedef struct{
     int maxLength;
 } mapping_t;         //Mapping for the action chunks
 
+typedef struct{
+    model_t model;
+    int pos;
+    char *val;
+    void *next;
+} chunk_init_t;
+
 static int **sync_groups;
 static int sync_groups_length;
 static size_t sync_groups_maxLength;
 
 static mapping_t* map;
+
+static chunk_init_t *chunk_init;
 
 /**
  * Strips the '!' or '?' from the label and any variables after that character
@@ -147,17 +158,15 @@ get_chunk(int model, int from){
     return map->map[model][from];
 }
 
-
-// Mapa specific
 /**
- * Sets all state label chunks after the state space generation has been done.
+ * Sets the state label chunks on the fly. Needs to be called every time the sub-models add a chunk.
  */
 void
-set_chunks(model_t model){
+set_chunks_fly(model_t model, int pos, char* val){
+    int model_nr = GBgetModelNr(model);
     int state_vars_counted = 0;
     int bools_counted = 0;
-    //Dit specifiek voor states labels
-    for(int i = 0; i < model_count; i++){
+    for(int i = 0; i < model_nr; i++){
         int j;
         char* labels[lts_type_get_state_length(GBgetLTStype(models[i]))];
         int nrOfLabels = 0;
@@ -165,16 +174,63 @@ set_chunks(model_t model){
             if(strcmp(lts_type_get_state_type(GBgetLTStype(models[i]), j), "Bool") != 0 && !string_in_array(lts_type_get_state_type(GBgetLTStype(models[i]), j), labels, nrOfLabels)){
                 labels[nrOfLabels] = lts_type_get_state_type(GBgetLTStype(models[i]), j);
                 nrOfLabels++;
-                for(int k = 0; k < GBchunkCount(models[i], j + 1 - bools_counted); k++){
-                    chunk c = GBchunkGet(models[i], j + 1 - bools_counted, k);
-                    GBchunkPutAt(model, j + state_vars_counted + 1 - bools_counted, c, k);
-                }
             } else {
                 bools_counted++;
             }
         }
         state_vars_counted += j - bools_counted;
         bools_counted = 0;
+    }
+    char* labels[lts_type_get_state_length(GBgetLTStype(models[model_nr]))];
+    int nrOfLabels = 0;
+    for(int j = 0; j <= pos && strcmp(lts_type_get_state_type(GBgetLTStype(models[model_nr]), j), "Bool") != 0; j++){
+        if(strcmp(lts_type_get_state_type(GBgetLTStype(models[model_nr]), j), "Bool") != 0 && !string_in_array(lts_type_get_state_type(GBgetLTStype(models[model_nr]), j), labels, nrOfLabels)){
+            labels[nrOfLabels] = lts_type_get_state_type(GBgetLTStype(models[model_nr]), j);
+            nrOfLabels++;
+            if(j == pos){
+                GBchunkPut(composition_model, pos + state_vars_counted + 1 - bools_counted, chunk_str(val));
+            }
+        } else {
+            bools_counted++;
+        }
+    }
+    return;
+}
+
+/**
+ * Saves the first calls of the state label chunks. These can only be added after the initialisation is done.
+ * Therefore they are first saved in a linked list structure.
+ */
+void
+set_init_chunks(model_t model, int pos, char* val){
+    if(chunk_init == NULL){
+        chunk_init = malloc(sizeof(chunk_init_t));
+        chunk_init->model = model;
+        chunk_init->pos = pos;
+        chunk_init->val = val;
+    } else {
+        chunk_init_t *cur = chunk_init;
+        while(cur->next != NULL){
+            cur = cur->next;
+        }
+        cur->next = malloc(sizeof(chunk_init_t));
+        ((chunk_init_t*)(cur->next))->model = model;
+        ((chunk_init_t*)(cur->next))->pos = pos;
+        ((chunk_init_t*)(cur->next))->val = val;
+    }
+}
+
+/**
+ * Adds all the chunks that have been saved by set_init_chunks. Also frees the linked list structure.
+ */
+void
+put_init_chunks(){
+    chunk_init_t *cur = chunk_init;
+    while(cur != NULL){
+        set_chunks_fly(cur->model, cur->pos, cur->val);
+        chunk_init_t *old = cur;
+        cur = cur->next;
+        free(old);
     }
 }
 
@@ -309,7 +365,6 @@ compare_int_array(int *array1, int *array2, int length){
  */
 void
 combineMatrices(matrixCall mc, model_t *models, matrix_t *dst){
-    int columns[model_count];
     int columns_total = 0;
     for(int i = 0; i < model_count; i++){
         columns_total += dm_ncols(mc(models[i]));
@@ -898,7 +953,6 @@ getTransitionsLong (model_t m, int group, int *src, TransitionCB cb, void *ctx)
                     for(int j = 0; j < active_models[total_models - 1]; j++){
                         state_vars_counted += state_vars[j];
                     }
-                    source[state_vars[active_models[i]]];//Source for this transition
                     for(int j = 0; j < state_vars[total_models - 1]; j++){
                         source[j] = src[j + state_vars_counted];
                     }
@@ -1127,9 +1181,11 @@ put_mapa_lts_types(lts_type_t ltstype){
 void
 GBparallelCompose (model_t composition, const char **files, int file_count, pins_loader_t loader)
 {
+    composition_model = composition;
     GBsetNextStateLong(composition, getTransitionsLong);
     GBsetNextStateAll(composition, getTransitionsAll);
     GBsetStateLabelLong(composition, getStateLabelLong);
+
     if(iomapa){
         TAU = 0;
         INTERN = 1;
@@ -1151,7 +1207,9 @@ GBparallelCompose (model_t composition, const char **files, int file_count, pins
     model_count = (int)(file_count / 2);
 
     models = malloc(model_count*sizeof(model_t));
+    initialized = malloc(model_count * sizeof(int*));
     for(int i = 0; i < model_count; i++){
+        initialized[i] = 0;
         models[i] = GBcreateBase();
         GBsetChunkMethods(models[i],HREgreyboxNewmap,HREglobal(),
                           HREgreyboxI2C,
@@ -1159,9 +1217,24 @@ GBparallelCompose (model_t composition, const char **files, int file_count, pins
                           HREgreyboxCAtI,
                           HREgreyboxCount);
         GBsetModelNr(models[i], i);
+        GBsetChunkCall(models[i],*set_init_chunks);
         Warning(info, "Starting loader for model %d", i);
         loader(models[i], files[i]);
     }
+
+    //LTS Type
+    lts_type_t ltstype = lts_type_create();
+    bool_type=lts_type_put_type(ltstype,"Bool",LTStypeChunk,NULL);
+    put_mapa_lts_types(ltstype);
+    GBsetLTStype(composition, ltstype);
+    GBchunkPutAt(composition,bool_type,chunk_str("F"),0);
+    GBchunkPutAt(composition,bool_type,chunk_str("T"),1);
+
+    put_init_chunks();
+    for(int i = 0; i < model_count; i++){
+        GBsetChunkCall(models[i],*set_chunks_fly);
+    }
+
 
     map = malloc(sizeof(mapping_t));//Create a chunk mapping
     map->map = malloc(model_count * sizeof(int*));
@@ -1313,14 +1386,6 @@ GBparallelCompose (model_t composition, const char **files, int file_count, pins
         GBsetMatrix(composition,"inhibit",&p_dm_inhibit,PINS_STRICT,PINS_INDEX_OTHER,PINS_INDEX_OTHER);
     }
 
-    //LTS Type
-    lts_type_t ltstype = lts_type_create();
-    bool_type=lts_type_put_type(ltstype,"Bool",LTStypeChunk,NULL);
-    put_mapa_lts_types(ltstype);
-    GBsetLTStype(composition, ltstype);
-    GBchunkPutAt(composition,bool_type,chunk_str("F"),0);
-    GBchunkPutAt(composition,bool_type,chunk_str("T"),1);
-
     int len_total = 0;
     int s0_total[lts_type_get_state_length(ltstype)];
     for (int i = 0; i < model_count; i++){
@@ -1344,6 +1409,7 @@ GBparallelCompose (model_t composition, const char **files, int file_count, pins
     if(support_copy){
         GBsetSupportsCopy(composition);
     }
+
 
 }
 

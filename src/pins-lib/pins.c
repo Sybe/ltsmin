@@ -70,7 +70,8 @@ struct grey_box_model {
 	/** Array of static information matrices. */
 	struct static_info_matrix * static_info_matrices;
 
-	int model_nr
+	int model_nr;
+	chunkCall_t chunkCall;
 };
 
 struct static_info_matrix{
@@ -1466,6 +1467,16 @@ GBgetChunkMap(model_t model,int type_no)
 {
     HREassert(model->map != NULL, "Map not correctly initialized, make sure to call GBsetLTStype, before using chunk mapping.");
 	return model->map[type_no];
+}
+
+void GBChunkCall(model_t model, int pos, char* val){
+    if(model->chunkCall != NULL){
+        model->chunkCall(model, pos, val);
+    }
+}
+
+void GBsetChunkCall(model_t model, chunkCall_t chunkCall){
+    model->chunkCall = chunkCall;
 }
 
 void GBsetDefaultFilter(model_t model,string_set_t filter){

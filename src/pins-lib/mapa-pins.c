@@ -169,6 +169,7 @@ int action_get_index(char* val){
 
 int term_get_index(int pos,char* val){
     int res=GBchunkPut(main_models[model_nr],state_types[model_nr][pos],chunk_str(val));
+    GBChunkCall(main_models[model_nr], pos, val);
 //    extra_chunks(action_types[model_nr],chunk_str(val));
 //    Warning(info,"get %d index (%d) for %s : %d",pos,state_types[model_nr][pos],val,res);
     return res;
