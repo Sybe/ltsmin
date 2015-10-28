@@ -13,11 +13,10 @@
 #include <pins-lib/pins.h>
 
 
-static model_t *models;     //Array of models to be composed
-static int model_count;     //Number of models to be composed
-static int bool_type;       //Boolean type
-static model_t composition_model;
-static int *initialized;
+static model_t *models;             //Array of models to be composed
+static int model_count;             //Number of models to be composed
+static int bool_type;               //Boolean type
+static model_t composition_model;   //The composed model
 
 static int iomapa = 0;
 static int input_enabled = 0;
@@ -50,7 +49,7 @@ typedef struct{
 
 typedef struct{
     int label;
-} label_ctx;
+} label_ctx;        //Context only saving the label, used for the label_cb callback
 
 typedef struct{
     int **map;
@@ -58,6 +57,10 @@ typedef struct{
     int maxLength;
 } mapping_t;         //Mapping for the action chunks
 
+
+/**
+ * Linked list structure to save all the chunks set before initialization is done
+ */
 typedef struct{
     model_t model;
     int pos;
@@ -75,8 +78,7 @@ static chunk_init_t *chunk_init;
 
 /**
  * Strips the '!' or '?' from the label and any variables after that character
- * Needed to check if a input and output action can synchronize
- * Only useful when the variable is not set to a value yet
+ * Needed to statically check if a input and output action can synchronize
  */
 void
 strip_io_label_complete(char* label){
@@ -108,6 +110,7 @@ strip_io_label(char* label){
 
 /**
  * Strips any variables in a label
+ * Needed in the static check to test if actions can synchronize
  */
 void
 strip_label(char* label){
@@ -236,7 +239,7 @@ put_init_chunks(){
 
 /*
  * Sets a group that should synchronize according to the numbers in groups
- * A value is -1 if a group does not syncronize for this action
+ * A value is -1 if a group does not synchronize for this action
  */
 void
 add_sync_group(int *groups){
@@ -339,7 +342,7 @@ get_sync_group(int group, int *dest){
 }
 
 /**
- * Inits an array with value -1 at all positions
+ * Initializes an array of length length with value -1 at all positions
  */
 void
 init_array(int *array, int length){
@@ -362,6 +365,7 @@ compare_int_array(int *array1, int *array2, int length){
 
 /**
  * Combines matrices according to the sync groups created earlier
+ * Works for the matrices with groups x state_vars dimensions.
  */
 void
 combineMatrices(matrixCall mc, model_t *models, matrix_t *dst){
@@ -415,6 +419,11 @@ void combineSLMatrices(model_t *models, matrix_t *dst){
         columns_created += columns[i];
     }
 }
+
+/**
+ * Recursively decides all possible combinations of groups that could possibly synchronize.
+ * This function is used for the i/o-mapa.
+ */
 void
 create_io_groups_recursive(int groups_count, int model_count, char labels[model_count][groups_count][MAX_LABEL_LENGTH], int types[model_count][groups_count], int model, int group, char *label, int new_groups[model_count]){
     if(strcmp(label, "") == 0){
@@ -550,6 +559,10 @@ create_io_groups_recursive(int groups_count, int model_count, char labels[model_
 
 }
 
+/**
+ * Recursively decides all possible combinations of groups that could possibly synchronize.
+ * This function is used for the standard mapa.
+ */
 void
 create_groups_recursive(int groups_count, int model_count, char labels[model_count][groups_count][MAX_LABEL_LENGTH], int types[model_count][groups_count], int model, int group, char *label, int new_groups[model_count]){
     if(strcmp(label, "") == 0){
@@ -687,7 +700,8 @@ create_groups_recursive(int groups_count, int model_count, char labels[model_cou
 
 /*
  * Reads the input txt files in mlppe format and based on those
- * creates an array which decides what groups to evaluate
+ * reads which labels can occur for each group. Based on that the groups
+ * that should be evaluated are created.
  */
 // MAPA specific
 void
@@ -753,7 +767,8 @@ create_correct_groups(char **files, int file_count){
 
 /**
  * Basic callback function that also returns to the original callback function.
- * Used for non synchronizing groups and final groups to call
+ * Used for non synchronizing groups and final groups to call.
+ * This function calls the callback in the algorithmic backend.
  */
 static void parallel_cb (void*context,transition_info_t*transition_info,int*dst,int*cpy){
     parrallel_ctx*ctx = (parrallel_ctx*) context;
@@ -862,6 +877,9 @@ static void parallel_sync_cb(void*context,transition_info_t*transition_info,int*
     (void)cpy;
 }
 
+/**
+ * An almost empty callback that is used to only get the label for a transition.
+ */
 static void label_cb(void*context,transition_info_t*transition_info,int*dst,int*cpy){
     label_ctx*ctx = (label_ctx*)context;
     ctx->label = transition_info->labels[2];
@@ -1112,6 +1130,10 @@ matrices_present(matrixCall mc, model_t *models){
     return result;
 }
 
+/**
+ * Sets all the lts_type variables. The state variables are retrieved from the sub-models
+ * the egde variables and state-lable variables are set equal to a normal mapa model.
+ */
 void
 put_mapa_lts_types(lts_type_t ltstype){
     int state_length = 0;
@@ -1207,9 +1229,7 @@ GBparallelCompose (model_t composition, const char **files, int file_count, pins
     model_count = (int)(file_count / 2);
 
     models = malloc(model_count*sizeof(model_t));
-    initialized = malloc(model_count * sizeof(int*));
     for(int i = 0; i < model_count; i++){
-        initialized[i] = 0;
         models[i] = GBcreateBase();
         GBsetChunkMethods(models[i],HREgreyboxNewmap,HREglobal(),
                           HREgreyboxI2C,
@@ -1230,6 +1250,7 @@ GBparallelCompose (model_t composition, const char **files, int file_count, pins
     GBchunkPutAt(composition,bool_type,chunk_str("F"),0);
     GBchunkPutAt(composition,bool_type,chunk_str("T"),1);
 
+    //Put all the chunks set during initialization and then set the chunkCall function
     put_init_chunks();
     for(int i = 0; i < model_count; i++){
         GBsetChunkCall(models[i],*set_chunks_fly);
@@ -1274,6 +1295,7 @@ GBparallelCompose (model_t composition, const char **files, int file_count, pins
     matrix_t *p_dm_NDS          = RTmalloc(sizeof(matrix_t));
     matrix_t *p_dm_NES          = RTmalloc(sizeof(matrix_t));
 
+    //Only combining matrices if all models have that matrix
     if(matrices_present(GBgetDMInfo, models)){
         combineMatrices(GBgetDMInfo, models, p_dm);
         GBsetDMInfo(composition, p_dm);
@@ -1319,11 +1341,10 @@ GBparallelCompose (model_t composition, const char **files, int file_count, pins
         GBsetGuardNESInfo(composition, p_dm_NES);
     }
 
-    //GBsetMatrix
     //Class matrix
     int id[model_count];
     int rows_class = 0;
-    int class_matrix_needed = 1;
+    int class_matrix_needed = 1;//Only if all sub-models have a class matrix
     for(int i = 0; i < model_count; i++){
         id[i] = GBgetMatrixID(models[i],LTSMIN_EDGE_TYPE_ACTION_CLASS);
         if (id[i] >= 0){
@@ -1332,7 +1353,7 @@ GBparallelCompose (model_t composition, const char **files, int file_count, pins
             class_matrix_needed = 0;
         }
     }
-    if(class_matrix_needed){
+    if(class_matrix_needed){//The values of the class matrix are set copying class matrix in the sub-models, in the synchronization case output overrules input
         static matrix_t p_dm_class;
         dm_create(&p_dm_class, rows_class, sync_groups_length);
         for(int i = 0; i < sync_groups_length; i++){
@@ -1369,7 +1390,7 @@ GBparallelCompose (model_t composition, const char **files, int file_count, pins
         GBsetMatrix(composition,LTSMIN_EDGE_TYPE_ACTION_CLASS,&p_dm_class,PINS_STRICT,PINS_INDEX_OTHER,PINS_INDEX_GROUP);
     }
 
-    //Inhibit matrix
+    //Inhibit matrix copied from the first sub-model
     int inhibit_id = GBgetMatrixID(models[0], "inhibit");
     if(inhibit_id >= 0){
         static matrix_t p_dm_inhibit;
@@ -1386,6 +1407,7 @@ GBparallelCompose (model_t composition, const char **files, int file_count, pins
         GBsetMatrix(composition,"inhibit",&p_dm_inhibit,PINS_STRICT,PINS_INDEX_OTHER,PINS_INDEX_OTHER);
     }
 
+    //Creation of the initial state
     int len_total = 0;
     int s0_total[lts_type_get_state_length(ltstype)];
     for (int i = 0; i < model_count; i++){
@@ -1398,10 +1420,9 @@ GBparallelCompose (model_t composition, const char **files, int file_count, pins
         }
         len_total += len_local;
     }
-
     GBsetInitialState(composition, s0_total);
 
-    //Support copy
+    //Support copy, if all models support copy, this model supports copy
     int support_copy = 1;
     for(int i = 0; i < model_count && support_copy; i++){
         support_copy &= GBsupportsCopy(models[i]);
