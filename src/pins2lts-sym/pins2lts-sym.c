@@ -2813,9 +2813,13 @@ do_output(char *etf_output, vset_t visited)
         }
     }
 
+    Warning(info, "output init");
     output_init(tbl_file);
+    Warning(info, "output trans");
     output_trans(tbl_file);
+    Warning(info, "output lbls");
     output_lbls(tbl_file, visited);
+    Warning(info, "output types");
     output_types(tbl_file);
 
     fclose(tbl_file);

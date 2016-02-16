@@ -12,7 +12,7 @@
 #include <hre/unix.h>
 #include <hre/user.h>
 #include <ltsmin-lib/ltsmin-standard.h>
-#include <mc-lib/hashtable.h>
+//#include <mc-lib/hashtable.h>
 #include <pins-lib/opaal-pins.h>
 #include <util-lib/chunk_support.h>
 #include <util-lib/util.h>
@@ -216,19 +216,19 @@ lattice_free_wrapper (const void *lattice)
     lattice_delete (lattice);
 }
 
-static const datatype_t DATATYPE_FED = {
-    (cmp_fun_t)lattice_cmp_wrapper,
-    (hash_fun_t)lattice_hash_wrapper,
-    (clone_fun_t)lattice_clone_wrapper,
-    (free_fun_t)lattice_free_wrapper
-};
+//static const datatype_t DATATYPE_FED = {
+//    (cmp_fun_t)lattice_cmp_wrapper,
+//    (hash_fun_t)lattice_hash_wrapper,
+//    (clone_fun_t)lattice_clone_wrapper,
+//    (free_fun_t)lattice_free_wrapper
+//};
 static const size_t INIT_SCALE = 20;
-static hashtable_t *table = NULL;
+//static hashtable_t *table = NULL;
 
 __attribute__((constructor)) void
 initialize_table ()
 {
-    table = ht_alloc (&DATATYPE_FED, INIT_SCALE);
+ //   table = ht_alloc (&DATATYPE_FED, INIT_SCALE);
 }
 
 typedef struct context_wrapper_s {
@@ -240,26 +240,28 @@ typedef struct context_wrapper_s {
 void
 cb_wrapper(void *context, transition_info_t *transition_info, int *dst, int *cpy)
 {
+//    Warning(info, "cb wrapper")
     (void) cpy;
-
     context_wrapper_t *ctx = (context_wrapper_t *) context;
     void **lattice = (void **) &dst[ctx->lattice_idx];
     //void *clone;
+//    Warning(info, /*"%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,*/"%d,%d,%d,%d,%d,%d,%d,%d,%d,%d", /*dst[0],dst[1],dst[2],dst[3],dst[4],dst[5],dst[6],dst[7],dst[8],dst[9],dst[10],dst[11],dst[12],dst[13],dst[14],dst[15],dst[16],dst[17],dst[18],dst[19],dst[20],dst[21],dst[22],dst[23],dst[24],dst[25],dst[26],dst[27],dst[28],dst[29],dst[30],dst[31],*/dst[32],dst[33],dst[34],dst[35],dst[36],dst[37],dst[38],dst[39],dst[40],dst[41]);
     size_t old_lattice = (size_t)*lattice;
-    ht_cas_empty (table,
-                  (map_key_t)*lattice, // key
-                  (map_val_t)0x77777777,
-                  (map_key_t*)lattice, // will be overwritten
-                  NULL);
+//    ht_cas_empty (table,
+//                  (map_key_t)*lattice, // key
+//                  (map_val_t)0x77777777,
+//                  (map_key_t*)lattice, // will be overwritten
+//                  NULL);
     //*lattice = clone;
     Debug ("Lattice of next state: %zu --> %zu", old_lattice, (size_t)*lattice);
     ctx->user_cb (ctx->user_context, transition_info, dst,NULL);
-    (void) old_lattice;
+//    (void) old_lattice;
 }
 
 int
 get_all_wrapper (model_t self, int* src, TransitionCB cb, void *user_context)
 {
+//    Warning(info, "get ALL");
     context_wrapper_t ctx;
     lts_type_t ltstype = GBgetLTStype (self);
     ctx.lattice_idx = lts_type_get_state_length(ltstype) - 2;
@@ -276,7 +278,11 @@ get_next_wrapper (model_t self, int t, int *src, TransitionCB cb, void *user_con
     ctx.lattice_idx = lts_type_get_state_length(ltstype) - 2;
     ctx.user_cb = cb;
     ctx.user_context = user_context;
-    return get_successor (self, t, src, cb_wrapper, &ctx);
+    if(t == 1){
+//        Warning(info, "get successors");
+        return get_successors(self, src, cb_wrapper, &ctx);
+    }
+    return 0;//get_successor (self, t, src, cb_wrapper, &ctx);
 }
 
 void
@@ -302,6 +308,7 @@ opaalExit()
 void
 opaalCompileGreyboxModel(model_t model, const char *filename)
 {
+    Warning(info, "compile greybox model");
     struct stat st;
     int ret;
 
@@ -334,6 +341,7 @@ opaalCompileGreyboxModel(model_t model, const char *filename)
 void
 opaalLoadDynamicLib(model_t model, const char *filename)
 {
+    Warning(info, "load dynamic lib");
     (void)model;
     // Open so file
     char abs_filename[PATH_MAX];
@@ -427,6 +435,7 @@ opaalLoadDynamicLib(model_t model, const char *filename)
 void
 opaalLoadGreyboxModel(model_t model, const char *filename)
 {
+    Warning(info, "load greybox model");
     lts_type_t ltstype;
     matrix_t *dm_info = RTmalloc(sizeof(matrix_t));
     matrix_t *dm_read_info = RTmalloc(sizeof(matrix_t));
@@ -653,12 +662,12 @@ opaalLoadGreyboxModel(model_t model, const char *filename)
     int state[state_length];
     get_initial_state((char*)state);
     void **lattice = (void **) &state[state_length - 2];
-    //void *clone;
-    ht_cas_empty (table,
-                  (map_key_t)*lattice, // key
-                  (map_val_t)0x77777777,
-                  (map_key_t*)lattice, // will be overwritten
-                  NULL);
+    void *clone;
+//    ht_cas_empty (table,
+//                  (map_key_t)*lattice, // key
+//                  (map_val_t)0x77777777,
+//                  (map_key_t*)lattice, // will be overwritten
+//                  NULL);
     Debug ("Lattice of initial state: %zu", (size_t)*lattice);
     GBsetInitialState(model,state);
 

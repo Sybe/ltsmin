@@ -39,6 +39,10 @@ if HAVE_SPINS
 bin_PROGRAMS += prom2lts-sym
 endif
 
+if HAVE_OPAAL
+bin_PROGRAMS += opaal2lts-sym
+endif
+
 SYM_CPP_FLAGS += $(SYLVAN_CPPFLAGS)
 
 # etf2lts-sym
@@ -110,3 +114,13 @@ prom2lts_sym_LDADD   += $(VSET_LIBS) $(SPINS_LIBS)
 prom2lts_sym_CPPFLAGS = -DSPINS $(SPINS_CPPFLAGS) $(SYM_CPP_FLAGS)
 prom2lts_sym_LDFLAGS  = $(SPINS_LDFLAGS) $(SYM_LD_FLAGS)
 nodist_EXTRA_prom2lts_sym_SOURCES = automake-force-linker.cxx # req. by vset
+
+# opaal2lts-sym
+opaal2lts_sym_SOURCES   = pins2lts-sym.c
+opaal2lts_sym_SOURCES  += ../pins-lib/opaal-pins.c ../pins-lib/opaal-pins.h
+opaal2lts_sym_LDADD     = $(PINS_LIBS)
+opaal2lts_sym_LDADD    += $(VSET_LIBS) $(OPAAL_LIBS) $(OPAAL_LDFLAGS) 
+opaal2lts_sym_CPPFLAGS  = -DOPAAL $(SYM_CPP_FLAGS)
+opaal2lts_sym_LDFLAGS   =  $(SYM_LD_FLAGS)
+nodist_EXTRA_opaal2lts_sym_SOURCES = automake-force-linker.cxx # req. by vset
+
