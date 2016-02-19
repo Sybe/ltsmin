@@ -33,6 +33,7 @@ void        (*get_guard_all)(void*, int *src, int* guards);
 const int*  (*get_guard_may_be_coenabled_matrix)(int g);
 const int*  (*get_guard_nes_matrix)(int g);
 const int*  (*get_guard_nds_matrix)(int g);
+//const int*  (*get_class_matrix)(int g);
 
 int         (*get_state_variable_count)();
 const char* (*get_state_variable_name)(int var);
@@ -278,11 +279,10 @@ get_next_wrapper (model_t self, int t, int *src, TransitionCB cb, void *user_con
     ctx.lattice_idx = lts_type_get_state_length(ltstype) - 2;
     ctx.user_cb = cb;
     ctx.user_context = user_context;
-    if(t == 1){
-//        Warning(info, "get successors");
-        return get_successors(self, src, cb_wrapper, &ctx);
-    }
-    return 0;//get_successor (self, t, src, cb_wrapper, &ctx);
+//    if(t == 0){
+//        return get_successors(self, src, cb_wrapper, &ctx);
+//    }
+    get_successor (self, t, src, cb_wrapper, &ctx);
 }
 
 void
@@ -407,6 +407,8 @@ opaalLoadDynamicLib(model_t model, const char *filename)
     RTdlsym( filename, dlHandle, "get_guard_nes_matrix" );
     get_guard_nds_matrix = (const int*(*)(int))
     RTdlsym( filename, dlHandle, "get_guard_nds_matrix" );
+//    get_class_matrix = (const int*(*)(int))
+//    RTdlsym( filename, dlHandle, "get_class_matrix" );
 
     lattice_clone = (void *(*)(const void *))
     RTdlsym( filename, dlHandle, "lattice_clone" );
@@ -445,6 +447,8 @@ opaalLoadGreyboxModel(model_t model, const char *filename)
     matrix_t *gce_info = RTmalloc(sizeof(matrix_t));  // guard may be co-enabled information
     matrix_t *gnes_info = RTmalloc(sizeof(matrix_t)); // guard necessary enabling set information
     matrix_t *gnds_info = RTmalloc(sizeof(matrix_t)); // guard necessary disabling set informaiton
+//    matrix_t *class_matrix = RTmalloc(sizeof(matrix_t));
+//    matrix_t *inhibit_matrix = RTmalloc(sizeof(matrix_t));
 
     //assume sequential use:
     if (NULL == dlHandle) {
@@ -642,6 +646,19 @@ opaalLoadGreyboxModel(model_t model, const char *filename)
         }
         GBsetGuardNDSInfo(model, gnds_info);
     }
+
+//    dm_create(class_matrix,2,ngroups);
+//    for(int i = 0 ; i < 2; i++){
+//        int* class = get_class_matrix(i);
+//        for(int j = 0; j < ngroups; j++){
+//            if(class[j]) dm_set(class_matrix, i, j);
+//        }
+//    }
+//    GBsetMatrix(model,LTSMIN_EDGE_TYPE_ACTION_CLASS,class_matrix,PINS_STRICT,PINS_INDEX_OTHER,PINS_INDEX_GROUP);
+//
+//    dm_create(inhibit_matrix, 2, 2);
+//    dm_set(inhibit_matrix, 0,1);
+//    GBsetMatrix(model,"inhibit",inhibit_matrix,PINS_STRICT,PINS_INDEX_OTHER,PINS_INDEX_OTHER);
 
     // set the group implementation
     sl_group_t* sl_group_all = RTmallocZero(sizeof(sl_group_t) + sl_size * sizeof(int));
