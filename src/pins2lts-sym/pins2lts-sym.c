@@ -742,7 +742,6 @@ explore_cb(vrel_t rel, void *context, int *src)
 VOID_TASK_2(expand_group_next, int, group, vset_t, set)
 {
     if (!expand_groups) return; // assume transitions loaded from file cannot expand further
-
     struct group_add_info ctx;
     ctx.group = group;
     ctx.set = set;
@@ -1394,7 +1393,16 @@ VOID_TASK_3(reach_bfs_next, struct reach_s *, dummy, bitvector_t *, reach_groups
         dummy->eg_count = 1;
         // Compute successor states
         vset_next(dummy->container, dummy->container, group_next[dummy->index]);
-        dummy->next_count = 1;
+
+//        long   n_count;
+//        char   elem_str[1024];
+//        double e_count;
+//
+//        get_vset_size(dummy->container, &n_count, &e_count, elem_str, sizeof(elem_str));
+//
+//
+//        Warning(info, "generated successors: %s",elem_str);
+//        dummy->next_count = 1;
 
         // Compute ancestor states
         if (dummy->ancestors != NULL) {
@@ -1512,7 +1520,9 @@ reach_bfs_prev(vset_t visited, vset_t visited_old, bitvector_t *reach_groups,
     struct reach_s *root = reach_prepare(0, nGrps);
 
     int level = 0;
-    while (!vset_is_empty(current_level)) {
+    vset_t prev_visited = vset_create(domain, -1, NULL);
+    while (!vset_is_empty(current_level)/* && !vset_equal(prev_visited, visited)*/) {
+        vset_copy(prev_visited, visited);
         if (trc_output != NULL) save_level(visited);
         stats_and_progress_report(current_level, visited, level);
         level++;

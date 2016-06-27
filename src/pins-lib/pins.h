@@ -472,6 +472,8 @@ extern int GBstateIsValidEnd(model_t model, int* src);
 \brief Return valid end/invalid end for a given state, false if undefined
 */
 
+typedef int(*get_discrete_vars_t)(model_t model);
+
 extern int GBtransitionInGroup(model_t model, int* labels, int group);
 /**<
 \brief Return if a transition labelled with labels potentially occurs in group
@@ -479,6 +481,12 @@ extern int GBtransitionInGroup(model_t model, int* labels, int group);
 The number of labels in the labels parameter should be equal to the number of
 labels with with each transition is labelled.
 */
+extern void GBsetDiscreteVars(model_t model, get_discrete_vars_t discrete_vars);
+
+
+extern int GBgetDiscreteVars(model_t model);
+
+
 
 /**
 \brief Get the default output filter of the model.

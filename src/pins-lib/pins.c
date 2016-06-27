@@ -61,6 +61,7 @@ struct grey_box_model {
 	string_set_t default_filter;
 	matrix_t *expand_matrix;
 	matrix_t *project_matrix;
+	get_discrete_vars_t discrete_vars;
 	
 	int mucalc_node_count;
 
@@ -212,6 +213,10 @@ int default_actions_long(model_t self,int group,int*src,TransitionCB cb,void*con
     dm_project_vector(GBgetExpandMatrix(self), group, src, src_short);
 
     return self->actions_short(self,group,src_short,expand_dest,&info);
+}
+
+int default_discrete_vars(model_t self){
+    return lts_type_get_state_length(self->ltstype);
 }
 
 
@@ -429,6 +434,8 @@ model_t GBcreateBase(){
 	model->project_matrix=NULL;
 	model->use_guards=0;
 	model->mucalc_node_count = 0;
+	model->discrete_vars=default_discrete_vars;
+
 	
 	model->static_info_index=SIcreate();
 	model->static_info_matrices=NULL;
@@ -580,8 +587,13 @@ void GBinitModelDefaults (model_t *p_model, model_t default_src)
     if (model->use_guards == 0) model->use_guards=default_src->use_guards;
     if (model->mucalc_node_count==0) model->mucalc_node_count = default_src->mucalc_node_count;
 
+    if (model->discrete_vars == default_discrete_vars){
+        GBsetDiscreteVars(model, default_src->discrete_vars);
+    }
+
     model->static_info_index = default_src->static_info_index;
     model->static_info_matrices = default_src->static_info_matrices;
+
 }
 
 void* GBgetContext(model_t model){
@@ -945,6 +957,15 @@ void GBsetTransitionInGroup(model_t model,transition_in_group_t method){
 int GBtransitionInGroup(model_t model,int* labels,int group){
 	return model->transition_in_group(model,labels,group);
 }
+
+void GBsetDiscreteVars(model_t model, get_discrete_vars_t method){
+    model->discrete_vars = method;
+}
+
+int GBgetDiscreteVars(model_t model){
+    model->discrete_vars(model);
+}
+
 
 void GBsetChunkMethods(model_t model,newmap_t newmap,void*newmap_context,
 	int2chunk_t int2chunk,chunk2int_t chunk2int,chunkatint_t chunkatint,

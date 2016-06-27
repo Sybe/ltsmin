@@ -44,6 +44,7 @@ typedef enum {
     VSET_ListDD64,
     VSET_Sylvan,
     VSET_LDDmc,
+    VSET_DDDmc,
 } vset_implementation_t;
 
 extern vset_implementation_t vset_default_domain;
@@ -53,8 +54,9 @@ extern vset_implementation_t vset_default_domain;
 
 \param n The length of vectors in the domain.
 \param impl The particular vector set implementation identifier
+\param discrete_vars The number of discrete vars in the vectors of the domain
 */
-extern vdom_t vdom_create_domain(int n, vset_implementation_t impl);
+extern vdom_t vdom_create_domain(int n, vset_implementation_t impl, int discrete_vars);
 
 /**
 \brief Create a domain that uses some vector set implementation from a file where the same
