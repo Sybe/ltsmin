@@ -1389,11 +1389,9 @@ VOID_TASK_3(reach_bfs_next, struct reach_s *, dummy, bitvector_t *, reach_groups
             vset_copy(dummy->container, dummy->red->true_container);
             vset_clear(dummy->red->true_container);
         }
-
         // Expand transition relations
         expand_group_next(dummy->index, dummy->container);
         dummy->eg_count = 1;
-
         // Compute successor states
         vset_next(dummy->container, dummy->container, group_next[dummy->index]);
         dummy->next_count = 1;
@@ -1584,7 +1582,19 @@ reach_bfs_prev(vset_t visited, vset_t visited_old, bitvector_t *reach_groups,
             // set next_level to new states (root->container - visited states)
             vset_copy(next_level, root->container);
             vset_clear(root->container);
+//
+//            long   n_count;
+//            char   elem_str[1024];
+//            double e_count;
+//
+//            get_vset_size(next_level, &n_count, &e_count, elem_str, sizeof(elem_str));
+//
+//            Warning(info, "pre vset_minus next_level: %s",elem_str);
             vset_minus(next_level, visited);
+
+//            get_vset_size(next_level, &n_count, &e_count, elem_str, sizeof(elem_str));
+//            Warning(info, "post vset_minus next_level: %s",elem_str);
+
         }
 
         // set current_level to next_level
@@ -2818,7 +2828,7 @@ do_output(char *etf_output, vset_t visited)
     Warning(info, "output trans");
     output_trans(tbl_file);
     Warning(info, "output lbls");
-    output_lbls(tbl_file, visited);
+//    output_lbls(tbl_file, visited);
     Warning(info, "output types");
     output_types(tbl_file);
 
@@ -3041,7 +3051,7 @@ init_model(char *file)
 
 static void
 init_domain(vset_implementation_t impl) {
-    domain = vdom_create_domain(N, impl);
+    domain = vdom_create_domain(N, impl, GBgetDiscreteVars(model));
 
     for (int i = 0; i < dm_ncols(GBgetDMInfo(model)); i++) {
         vdom_set_name(domain, i, lts_type_get_state_name(ltstype, i));
@@ -3548,7 +3558,7 @@ VOID_TASK_1(actual_main, void*, arg)
     if (act_detect != NULL) init_action_detection();
 
     /* turn on Lace again (for Sylvan) */
-    if (vset_default_domain==VSET_Sylvan || vset_default_domain==VSET_LDDmc) {
+    if (vset_default_domain==VSET_Sylvan || vset_default_domain==VSET_LDDmc || vset_default_domain==VSET_DDDmc) {
         lace_resume();
     }
 
