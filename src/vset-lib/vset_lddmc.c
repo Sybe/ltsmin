@@ -268,8 +268,11 @@ set_count(vset_t set, long *nodes, bn_int_t *elements)
 {
     entermt(set);
     LACE_ME;
+    int32_t values[5];
+//    lddmc_print_discrete_states(set->mdd, 5, 0, values);
     if (nodes != NULL) *nodes = lddmc_nodecount(set->mdd);
-    if (elements != NULL) bn_double2int(lddmc_satcount_cached(set->mdd), elements);
+    if (elements != NULL) bn_double2int(lddmc_satcount_cached(set->mdd, 9), elements);
+
     leavemt(set);
 }
 
@@ -535,6 +538,12 @@ set_next(vset_t dst, vset_t src, vrel_t rel)
         lddmc_deref(dst->mdd);
         dst->mdd = lddmc_ref(lddmc_relprod(src->mdd, rel->mdd, rel->meta));
     }
+
+    //int32_t values[dst->size];
+    //lddmc_print_discrete_states(dst->mdd, dst->size, 0, values);
+
+
+
     leavemt(dst);
 }
 
